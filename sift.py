@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt 
 
-# DISTANCE_THRESHOLD = 300
+DISTANCE_THRESHOLD = 300
 
 def ratio_test(matches, threshold=0.85):
     good = []
@@ -41,8 +41,19 @@ def siftTest(qImg, rImg, selectedPt):
     target_keys, target_desc = sift.detectAndCompute(gray_target, None)
 
     target_keys = list(target_keys)
+
+    # filter to a selected point with radius threshold
+    filtered_target_keys = [] 
+    filtered_target_desc = []
+    for kp in range(len(target_keys)):
+        pt = np.array((target_keys[kp].pt[0], target_keys[kp].pt[1]))
+        if np.linalg.norm(pt - selectedPt) < DISTANCE_THRESHOLD:
+            filtered_target_keys.append(target_keys[kp])
+            filtered_target_desc.append(target_desc[kp])
+            # filtered_target_desc = np.append(filtered_target_desc, target_keys[kp])
+    filtered_target_desc = np.array(filtered_target_desc)
     
-    return target_keys, target_desc, cam_keys, cam_desc
+    return filtered_target_keys, filtered_target_desc, cam_keys, cam_desc
 
 def surfTest(qImg, rImg, selectedPt):
     hessian = 400 # default val
@@ -56,8 +67,20 @@ def surfTest(qImg, rImg, selectedPt):
     # draw keypoints on image to compare later
     target_keys, target_desc = surf.detectAndCompute(gray_target, None)
     cam_keys, cam_desc = surf.detectAndCompute(gray_cam, None)
+    # print(target_desc)
 
-    return target_keys, target_desc, cam_keys, cam_desc
+    # keep track of indexes of keys to filter
+    filtered_target_keys = [] 
+    filtered_target_desc = []
+    for kp in range(len(target_keys)):
+        pt = np.array((target_keys[kp].pt[0], target_keys[kp].pt[1]))
+        if np.linalg.norm(pt - selectedPt) < DISTANCE_THRESHOLD:
+            filtered_target_keys.append(target_keys[kp])
+            filtered_target_desc.append(target_desc[kp])
+            # filtered_target_desc = np.append(filtered_target_desc, target_keys[kp])
+    filtered_target_desc = np.array(filtered_target_desc)
+
+    return filtered_target_keys, filtered_target_desc, cam_keys, cam_desc
 
 def combo_test(qImg, rImg, selectedPt):
     # run algorithms
@@ -108,7 +131,7 @@ def combo_test(qImg, rImg, selectedPt):
         target_pts,
         cam_pts,
         cv2.RANSAC,
-        4.0,
+        3.0,
         maxIters=5000,
         confidence=0.99
     )
@@ -144,8 +167,8 @@ def combo_test(qImg, rImg, selectedPt):
 
 def main():
     cropped = cv2.imread('cropped.png')
-    robot = cv2.imread('robotPOV2.png')
-    quest = cv2.imread('qpov2.jpg')
+    robot = cv2.imread('robotPOV.jpg')
+    quest = cv2.imread('questPOV.jpg')
 
     # small image
     h1, w1 = quest.shape[:2]
